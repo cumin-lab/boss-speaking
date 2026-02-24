@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登壇管理 — Boss Speaking</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: #e0ddd5;
+    --accent: #9a7340;
+    --accent2: #b8894e;
+    --text: #1a1a18;
+    --text-muted: #888070;
+    --green: #2e8a5e;
+    --yellow: #b8860b;
+    --red: #c0392b;
+    --blue: #2a6db5;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  header {
+    padding: 32px 40px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    background: linear-gradient(180deg, #edeae2 0%, var(--bg) 100%);
+  }
+
+  .header-left h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    color: var(--accent);
+    letter-spacing: 0.02em;
+  }
+
+  .header-left p {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-top: 4px;
+    letter-spacing: 0.05em;
+  }
+
+  .btn-add {
+    background: var(--accent);
+    color: #ffffff;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 6px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: background 0.2s;
+  }
+
+  .btn-add:hover { background: var(--accent2); }
+
+  /* Stats bar */
+  .stats {
+    display: flex;
+    gap: 1px;
+    background: var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stat {
+    flex: 1;
+    background: var(--surface);
+    padding: 16px 24px;
+    text-align: center;
+  }
+
+  .stat-num {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: 'Playfair Display', serif;
+  }
+
+  .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; letter-spacing: 0.08em; }
+
+  /* Filters */
+  .filters {
+    padding: 16px 40px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .filter-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .filter-btn.active, .filter-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(201,169,110,0.08);
+  }
+
+  .search-input {
+    margin-left: auto;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 16px;
+    border-radius: 20px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    width: 200px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-input:focus { border-color: var(--accent); }
+  .search-input::placeholder { color: var(--text-muted); }
+
+  /* Table */
+  .table-wrap { padding: 24px 40px; overflow-x: auto; }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  thead tr {
+    border-bottom: 2px solid var(--border);
+  }
+
+  th {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-align: left;
+    padding: 0 12px 12px;
+    white-space: nowrap;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+    cursor: pointer;
+  }
+
+  tbody tr:hover { background: var(--surface); }
+
+  td {
+    padding: 14px 12px;
+    font-size: 13px;
+    vertical-align: top;
+  }
+
+  .td-title { font-weight: 500; color: var(--text); }
+  .td-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+  /* Status badge */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .badge-検討中 { background: rgba(92,158,224,0.15); color: var(--blue); }
+  .badge-確定 { background: rgba(76,175,130,0.15); color: var(--green); }
+  .badge-完了 { background: rgba(136,136,153,0.15); color: var(--text-muted); }
+  .badge-辞退 { background: rgba(224,92,92,0.15); color: var(--red); }
+
+  .cat-badge {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .cat-登壇 { background: rgba(201,169,110,0.15); color: var(--accent); border: 1px solid rgba(201,169,110,0.3); }
+  .cat-取材 { background: rgba(160,110,210,0.15); color: #c87de8; border: 1px solid rgba(160,110,210,0.3); }
+  .cat-出演 { background: rgba(76,175,200,0.15); color: #4cc4c0; border: 1px solid rgba(76,175,200,0.3); }
+
+  /* Deadline warning */
+  .deadline-warn { color: var(--red); font-weight: 500; }
+  .deadline-near { color: var(--yellow); font-weight: 500; }
+
+  /* Action buttons */
+  .actions { display: flex; gap: 8px; }
+
+  .btn-edit, .btn-del {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: 'Noto Sans JP', sans-serif;
+    transition: all 0.2s;
+  }
+
+  .btn-edit:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-del:hover { border-color: var(--red); color: var(--red); }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+  }
+
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    width: 580px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 32px;
+    animation: slideUp 0.2s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .modal h2 {
+    font-family: 'Playfair Display', serif;
+    color: var(--accent);
+    font-size: 20px;
+    margin-bottom: 24px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: span 2; }
+
+  label { font-size: 11px; color: var(--text-muted); letter-spacing: 0.08em; }
+
+  input, select, textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 9px 12px;
+    border-radius: 6px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 80px; }
+
+  select option { background: #ffffff; color: var(--text); }
+
+  .modal-footer {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .btn-cancel {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 9px 20px;
+    border-radius: 6px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-cancel:hover { border-color: var(--text-muted); color: var(--text); }
+
+  .btn-save {
+    background: var(--accent);
+    border: none;
+    color: #ffffff;
+    padding: 9px 24px;
+    border-radius: 6px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn-save:hover { background: var(--accent2); }
+
+  @media (max-width: 768px) {
+    header { flex-direction: column; align-items: flex-start; gap: 16px; padding: 24px 20px 20px; }
+    .filters { padding: 12px 20px; }
+    .table-wrap { padding: 16px 20px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-group.full { grid-column: span 1; }
+    .stats .stat { padding: 12px 8px; }
+    .stat-num { font-size: 20px; }
+  }
+
+  /* Loading bar */
+  #loadingBar {
+    display: none;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent));
+    background-size: 200% 100%;
+    animation: shimmer 1.2s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s;
+    z-index: 200;
+    white-space: nowrap;
+  }
+
+  #toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Error */
+  #errorMsg {
+    display: none;
+    background: rgba(192,57,43,0.08);
+    border: 1px solid rgba(192,57,43,0.25);
+    color: var(--red);
+    padding: 10px 20px;
+    font-size: 13px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div id="loadingBar"></div>
+<div id="errorMsg"></div>
+<div id="toast"></div>
+
+<header>
+  <div class="header-left">
+    <h1>Boss Speaking Manager</h1>
+    <p>登壇依頼・スケジュール管理</p>
+  </div>
+  <button class="btn-add" onclick="openModal()">＋ 新規登壇依頼を追加</button>
+</header>
+
+<div class="stats">
+  <div class="stat"><div class="stat-num" id="stat-total">0</div><div class="stat-label">総件数</div></div>
+  <div class="stat"><div class="stat-num" id="stat-kentou" style="color:var(--blue)">0</div><div class="stat-label">検討中</div></div>
+  <div class="stat"><div class="stat-num" id="stat-kakutei" style="color:var(--green)">0</div><div class="stat-label">確定</div></div>
+  <div class="stat"><div class="stat-num" id="stat-kanryo" style="color:var(--text-muted)">0</div><div class="stat-label">完了</div></div>
+  <div class="stat"><div class="stat-num" id="stat-jirai" style="color:var(--red)">0</div><div class="stat-label">辞退</div></div>
+</div>
+
+<div class="filters">
+  <button class="filter-btn active" onclick="setFilter('all', this)">すべて</button>
+  <button class="filter-btn" onclick="setFilter('検討中', this)">検討中</button>
+  <button class="filter-btn" onclick="setFilter('確定', this)">確定</button>
+  <button class="filter-btn" onclick="setFilter('完了', this)">完了</button>
+  <button class="filter-btn" onclick="setFilter('辞退', this)">辞退</button>
+  <input class="search-input" type="text" placeholder="🔍 検索..." id="searchInput" oninput="renderTable()">
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>登壇日</th>
+        <th>カテゴリ</th>
+        <th>テーマ・タイトル</th>
+        <th>依頼元・主催者</th>
+        <th>場所</th>
+        <th>登壇料</th>
+        <th>資料提出期限</th>
+        <th>ステータス</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+  <div class="empty-state" id="emptyState" style="display:none">
+    <div class="icon">📋</div>
+    <div>登壇依頼がありません。右上の「新規登壇依頼を追加」から登録してください。</div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <h2 id="modalTitle">登壇依頼を追加</h2>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>テーマ・タイトル *</label>
+        <input type="text" id="f-title" placeholder="例：DX推進と未来の働き方">
+      </div>
+      <div class="form-group">
+        <label>カテゴリ</label>
+        <select id="f-category">
+          <option value="登壇">登壇</option>
+          <option value="取材">取材</option>
+          <option value="出演">出演</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>依頼元・主催者 *</label>
+        <input type="text" id="f-organizer" placeholder="例：〇〇協会">
+      </div>
+      <div class="form-group">
+        <label>担当者・連絡先</label>
+        <input type="text" id="f-contact" placeholder="例：山田 太郎 / 03-xxxx-xxxx">
+      </div>
+      <div class="form-group">
+        <label>登壇日時 *</label>
+        <input type="datetime-local" id="f-date">
+      </div>
+      <div class="form-group">
+        <label>場所</label>
+        <input type="text" id="f-place" placeholder="例：東京国際フォーラム B7">
+      </div>
+      <div class="form-group">
+        <label>登壇料</label>
+        <input type="text" id="f-fee" placeholder="例：200,000円 / 無償">
+      </div>
+      <div class="form-group">
+        <label>資料提出期限</label>
+        <input type="date" id="f-deadline">
+      </div>
+      <div class="form-group">
+        <label>ステータス</label>
+        <select id="f-status">
+          <option value="検討中">検討中</option>
+          <option value="確定">確定</option>
+          <option value="完了">完了</option>
+          <option value="辞退">辞退</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>内容メモ</label>
+        <textarea id="f-memo" placeholder="テーマ詳細、特記事項、準備メモなど..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn-save" onclick="saveRecord()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Supabase 設定 ──────────────────────────────
+  const SUPABASE_URL = 'https://xcaurnunhjvzoqkosytc.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjYXVybnVuaGp2em9xa29zeXRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NzQ2NTEsImV4cCI6MjA4NzQ1MDY1MX0.sJN5lxn6D_XCCazz0lgkYjXjgzpFBZjnq_IKqxymXNs';
+  const TABLE = 'speaking_requests';
+
+  async function sbFetch(path, options = {}) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': options.prefer || '',
+        ...options.headers
+      },
+      ...options
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(err);
+    }
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+  }
+
+  // ── 状態 ──────────────────────────────────────
+  let records = [];
+  let currentFilter = 'all';
+  let editingId = null;
+
+  // ── DB操作 ────────────────────────────────────
+  async function load() {
+    showLoading(true);
+    try {
+      const data = await sbFetch(`${TABLE}?select=*&order=date.asc.nullslast`);
+      records = data || [];
+      renderTable();
+    } catch(e) {
+      showError('データの読み込みに失敗しました。Supabaseの接続を確認してください。');
+      console.error(e);
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  async function insertRecord(data) {
+    return await sbFetch(TABLE, {
+      method: 'POST',
+      prefer: 'return=representation',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async function updateRecord(id, data) {
+    return await sbFetch(`${TABLE}?id=eq.${id}`, {
+      method: 'PATCH',
+      prefer: 'return=representation',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async function deleteFromDB(id) {
+    return await sbFetch(`${TABLE}?id=eq.${id}`, { method: 'DELETE' });
+  }
+
+  // ── UI ヘルパー ───────────────────────────────
+  function showLoading(on) {
+    document.getElementById('loadingBar').style.display = on ? 'block' : 'none';
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('errorMsg');
+    el.textContent = msg;
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 5000);
+  }
+
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2500);
+  }
+
+  // ── フィルタ ──────────────────────────────────
+  function setFilter(f, el) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    renderTable();
+  }
+
+  function getFiltered() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    return records.filter(r => {
+      const matchFilter = currentFilter === 'all' || r.status === currentFilter;
+      const matchSearch = !q || [r.title, r.organizer, r.place, r.memo].some(f => (f||'').toLowerCase().includes(q));
+      return matchFilter && matchSearch;
+    }).sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  }
+
+  // ── フォーマット ──────────────────────────────
+  function formatDate(dt) {
+    if (!dt) return '—';
+    const d = new Date(dt);
+    if (isNaN(d)) return dt;
+    const y = d.getFullYear();
+    const mo = String(d.getMonth()+1).padStart(2,'0');
+    const da = String(d.getDate()).padStart(2,'0');
+    const days = ['日','月','火','水','木','金','土'];
+    const wd = days[d.getDay()];
+    const h = String(d.getHours()).padStart(2,'0');
+    const mi = String(d.getMinutes()).padStart(2,'0');
+    return `${y}/${mo}/${da}（${wd}）${h}:${mi}`;
+  }
+
+  function formatDeadline(ds) {
+    if (!ds) return '<span style="color:var(--text-muted)">—</span>';
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const d = new Date(ds);
+    const diff = Math.round((d - today) / 86400000);
+    const [y,mo,da] = ds.split('-');
+    const label = `${y}/${mo}/${da}`;
+    if (diff < 0) return `<span class="deadline-warn">⚠ ${label}（期限超過）</span>`;
+    if (diff <= 7) return `<span class="deadline-near">⏰ ${label}（あと${diff}日）</span>`;
+    return label;
+  }
+
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── テーブル描画 ──────────────────────────────
+  function renderTable() {
+    const filtered = getFiltered();
+    const tbody = document.getElementById('tableBody');
+    const empty = document.getElementById('emptyState');
+
+    document.getElementById('stat-total').textContent = records.length;
+    document.getElementById('stat-kentou').textContent = records.filter(r=>r.status==='検討中').length;
+    document.getElementById('stat-kakutei').textContent = records.filter(r=>r.status==='確定').length;
+    document.getElementById('stat-kanryo').textContent = records.filter(r=>r.status==='完了').length;
+    document.getElementById('stat-jirai').textContent = records.filter(r=>r.status==='辞退').length;
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    tbody.innerHTML = filtered.map(r => `
+      <tr onclick="openDetail(${r.id})">
+        <td><div class="td-title">${formatDate(r.date)}</div></td>
+        <td><span class="cat-badge cat-${r.category||'登壇'}">${r.category||'登壇'}</span></td>
+        <td><div class="td-title">${esc(r.title)}</div></td>
+        <td>
+          <div>${esc(r.organizer)}</div>
+          <div class="td-sub">${esc(r.contact||'')}</div>
+        </td>
+        <td>${esc(r.place||'—')}</td>
+        <td>${esc(r.fee||'—')}</td>
+        <td>${formatDeadline(r.deadline)}</td>
+        <td><span class="badge badge-${r.status}">${r.status}</span></td>
+        <td onclick="event.stopPropagation()">
+          <div class="actions">
+            <button class="btn-edit" onclick="openEdit(${r.id})">編集</button>
+            <button class="btn-del" onclick="deleteRecord(${r.id})">削除</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  // ── モーダル ──────────────────────────────────
+  function openModal(id = null) {
+    editingId = id;
+    const modal = document.getElementById('modalOverlay');
+    const titleEl = document.getElementById('modalTitle');
+    const fields = ['title','category','organizer','contact','date','place','fee','deadline','status','memo'];
+
+    if (id) {
+      const r = records.find(x => x.id === id);
+      titleEl.textContent = '登壇依頼を編集';
+      fields.forEach(f => {
+        const el = document.getElementById('f-'+f);
+        if (!el) return;
+        if (f === 'date' && r[f]) {
+          // datetime-local needs format YYYY-MM-DDTHH:MM
+          el.value = r[f].slice(0,16);
+        } else {
+          el.value = r[f] || '';
+        }
+      });
+    } else {
+      titleEl.textContent = '登壇依頼を追加';
+      fields.forEach(f => {
+        const el = document.getElementById('f-'+f);
+        if (!el) return;
+        el.value = f === 'status' ? '検討中' : f === 'category' ? '登壇' : '';
+      });
+    }
+    modal.classList.add('open');
+  }
+
+  function openEdit(id) { openModal(id); }
+  function openDetail(id) { openModal(id); }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+    editingId = null;
+  }
+
+  function handleOverlayClick(e) {
+    if (e.target === document.getElementById('modalOverlay')) closeModal();
+  }
+
+  // ── 保存 ──────────────────────────────────────
+  async function saveRecord() {
+    const get = id => document.getElementById('f-'+id).value.trim();
+    const title = get('title');
+    const organizer = get('organizer');
+    if (!title) { alert('テーマ・タイトルを入力してください'); return; }
+    if (!organizer) { alert('依頼元・主催者を入力してください'); return; }
+
+    const data = {
+      title, organizer,
+      category: get('category') || '登壇',
+      contact: get('contact') || null,
+      date: get('date') || null,
+      place: get('place') || null,
+      fee: get('fee') || null,
+      deadline: get('deadline') || null,
+      status: get('status'),
+      memo: get('memo') || null
+    };
+
+    const btn = document.querySelector('.btn-save');
+    btn.textContent = '保存中...';
+    btn.disabled = true;
+
+    try {
+      if (editingId) {
+        const updated = await updateRecord(editingId, data);
+        const idx = records.findIndex(r => r.id === editingId);
+        records[idx] = (updated && updated[0]) ? updated[0] : { ...records[idx], ...data };
+        showToast('✓ 更新しました');
+      } else {
+        const created = await insertRecord(data);
+        if (created && created[0]) records.push(created[0]);
+        showToast('✓ 追加しました');
+      }
+      renderTable();
+      closeModal();
+    } catch(e) {
+      showError('保存に失敗しました: ' + e.message);
+      console.error(e);
+    } finally {
+      btn.textContent = '保存する';
+      btn.disabled = false;
+    }
+  }
+
+  // ── 削除 ──────────────────────────────────────
+  async function deleteRecord(id) {
+    if (!confirm('この登壇依頼を削除しますか？')) return;
+    try {
+      await deleteFromDB(id);
+      records = records.filter(r => r.id !== id);
+      renderTable();
+      showToast('🗑 削除しました');
+    } catch(e) {
+      showError('削除に失敗しました: ' + e.message);
+    }
+  }
+
+  // ── 起動 ──────────────────────────────────────
+  load();
+</script>
+</body>
+</html>
